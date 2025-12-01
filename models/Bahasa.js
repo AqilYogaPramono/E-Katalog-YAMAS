@@ -91,6 +91,37 @@ class Bahasa {
             throw err
         }
     }
+
+    static async getBahasa(limit, offset) {
+        try {
+            const [rows] = await connection.query(
+                `SELECT id, bahasa FROM bahasa ORDER BY id ASC LIMIT ? OFFSET ?`,
+                [limit, offset]
+            )
+            return rows
+        } catch (err) {
+            throw err
+        }
+    }
+
+    static async searchByBahasa(keyword) {
+        try {
+            const likeKeyword = `%${keyword}%`
+            const [rows] = await connection.query(`SELECT * FROM bahasa WHERE bahasa LIKE ? ORDER BY id ASC`, [likeKeyword])
+            return rows
+        } catch (err) {
+            throw err
+        }
+    }
+
+    static async getCountBahasa() {
+        try {
+            const [rows] = await connection.query(`SELECT COUNT(id) AS total_bahasa FROM bahasa`)
+            return rows
+        } catch (err) {
+            throw err
+        }
+    }
 }
 
 module.exports = Bahasa

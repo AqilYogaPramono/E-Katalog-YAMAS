@@ -7,13 +7,31 @@ const Pegawai = require('../../../models/Pegawai')
 // import middleware untuk mengecek peran pengguna login
 const {authPustakawan} = require('../.././../middlewares/auth')
 
-//menampilakn semua data bahasa
 router.get('/', authPustakawan, async (req, res) => {
     try {
         const pegawai = await Pegawai.getNama(req.session.pegawaiId)
-        const data = await Bahasa.getAll()
+        const page = parseInt(req.query.page) || 1
+        const limit = 20
+        const offset = (page - 1) * limit
+        const flashedKeyword = req.flash('keyword')[0]
 
-        res.render('pustakawan/data-induk/bahasa/index', {data, pegawai})
+        if (flashedKeyword) {
+            const data = await Bahasa.searchByBahasa(flashedKeyword)
+            return res.render('pustakawan/data-induk/bahasa/index', {
+                data,
+                pegawai,
+                page: 1,
+                totalHalaman: 1,
+                keyword: flashedKeyword
+            })
+        }
+
+        const data = await Bahasa.getBahasa(limit, offset)
+        const countResult = await Bahasa.getCountBahasa()
+        const totalBahasa = countResult[0].total_bahasa
+        const totalHalaman = Math.ceil(totalBahasa / limit)
+
+        res.render('pustakawan/data-induk/bahasa/index', { data, pegawai, page, totalHalaman })
     } catch(err) {
         console.error(err)
         req.flash('error', "Internal Server Error")
@@ -123,13 +141,10 @@ router.post('/update/:id', authPustakawan, async (req, res) => {
     }
 })
 
-//mengapus data bahasa berdasarakn id
 router.post('/delete/:id', authPustakawan, async (req, res) => {
     try {
-        // destructuring req.params
         const {id} = req.params
 
-        // memeriksa apakah bahasa sudah digunakan
         if (await Bahasa.checkBahasaUsed(id)) {
             req.flash("error", "Bahasa masih digunakan oleh buku atau majalah lain")
             req.flash('data', req.body)
@@ -143,6 +158,18 @@ router.post('/delete/:id', authPustakawan, async (req, res) => {
         console.error(err)
         req.flash('error', "Internal Server Error")
         return res.redirect('/pustakawan/bahasa')
+    }
+})
+
+router.post('/search', authPustakawan, async (req, res) => {
+    try {
+        const { bahasa } = req.body
+        req.flash('keyword', bahasa || '')
+        res.redirect('/pustakawan/bahasa')
+    } catch (err) {
+        console.error(err)
+        req.flash('error', 'Internal server error')
+        res.redirect('/pustakawan/bahasa')
     }
 })
 
