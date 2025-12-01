@@ -18,8 +18,9 @@
                     <div class="form-group">
                       <label for="foto_penerbit">Foto Penerbit Koran</label>
                       <input type="file" class="form-control" id="foto_penerbit" name="foto" accept="image/*" data-preview="previewTambah" required>
+                      <small class="form-text text-muted">Format diperbolehkan: jpg, jpeg, png, webp dan Dimensi gambar harus 1:1 (persegi)</small>
                       <div class="mt-2">
-                        <img id="previewTambah" src="#" alt="preview" style="height:300px;border-radius:8px;display:none;cursor:zoom-in;" class="img-click-preview">
+                        <img id="previewTambah" src="#" alt="preview" style="width:auto;max-width:100%;max-height:300px;height:auto;border-radius:8px;display:none;cursor:zoom-in;object-fit:contain;background:#f4f6fb;margin-left:0;margin-right:0;" class="img-click-preview">
                       </div>
                     </div>
 

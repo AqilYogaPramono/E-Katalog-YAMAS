@@ -3,16 +3,13 @@ const router = express.Router()
 const path = require('path')
 const multer = require('multer')
 const fs = require('fs')
-// import model penerbit koran 
+const sharp = require('sharp')
+
 const PenerbitKoran = require('../../../models/PenerbitKoran')
-// import model pegawai
 const Pegawai = require('../../../models/Pegawai')
-// import middleware untuk mengecek peran pengguna login
 const {authPustakawan} = require('../.././../middlewares/auth')
-// import middleware untuk compress dan convert image ke webp
 const { convertImageFile } = require('../../../middlewares/convertImage')
 
-//konfigurasi multer untuk upload gambar
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, path.join(__dirname, '../../../public/images/penerbit-koran'))
@@ -23,10 +20,8 @@ const storage = multer.diskStorage({
     }
 })
 
-//instalisasi multer dengan konfigurasi storage
 const upload = multer({ storage })
 
-// Fungsi untuk menghapus file yang diupload
 const deleteUploadedFile = (input) => {
     if (!input) return
 
@@ -41,11 +36,20 @@ const deleteUploadedFile = (input) => {
     }
 }
 
-// Fungsi untuk menghapus foto lama saat update
 const deleteOldPhoto = (oldPhoto) => {
     if (oldPhoto) {
         const filePath = path.join(__dirname, '../../../public/images/penerbit-koran', oldPhoto)
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+    }
+}
+
+const checkImageDimensions = async (filePath) => {
+    try {
+        const metadata = await sharp(filePath).metadata()
+        return metadata.width === metadata.height
+    } catch (err) {
+        console.error('Error checking penerbit koran image dimensions:', err)
+        return false
     }
 }
 
@@ -97,13 +101,22 @@ router.post('/create', authPustakawan, upload.single('foto'), async (req, res) =
             return res.redirect('/pustakawan/penerbit/buat')
         }
 
-        // mengecek format file yang diinput
         const allowedFormats = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
         if (req.file && !allowedFormats.includes(req.file.mimetype)) {
             deleteUploadedFile(req.file)
             req.flash('error', 'Hanya file gambar (jpg, jpeg, png, webp) yang diizinkan')
             req.flash('data', req.body)
             return res.redirect('/pustakawan/penerbit/buat')
+        }
+
+        if (req.file && req.file.path) {
+            const isValidDimensions = await checkImageDimensions(req.file.path)
+            if (!isValidDimensions) {
+                deleteUploadedFile(req.file)
+                req.flash('error', 'Dimensi gambar harus 1:1 (persegi)')
+                req.flash('data', req.body)
+                return res.redirect('/pustakawan/penerbit/buat')
+            }
         }
 
         if (await PenerbitKoran.checkPenerbitKoranCreate(data)) {
@@ -113,7 +126,6 @@ router.post('/create', authPustakawan, upload.single('foto'), async (req, res) =
             return res.redirect('/pustakawan/penerbit/buat')
         }
 
-        //convert image to webp and compress when < 500kb
         if (req.file && req.file.path) {
             const result = await convertImageFile(req.file.path)
             if (result && result.outputPath) {
@@ -154,21 +166,17 @@ router.get('/edit/:id', authPustakawan, async (req, res) => {
 router.post('/update/:id', authPustakawan, upload.single('foto'), async (req, res) => {
     try {
         const {id} = req.params
-        const {nama_penerbit} = req.body
-        const data = {nama_penerbit}
-
-        // mendapatkan foto penerbit koran berdasarkan id
         const penerbitKoran = await PenerbitKoran.getFotoById(id)
-        const foto = req.file ? req.file.filename : penerbitKoran.foto
+        const {nama_penerbit, hapus_foto} = req.body
+        let foto = penerbitKoran.foto
 
-        if (!data.nama_penerbit) {
+        if (!nama_penerbit) {
             deleteUploadedFile(req.file)
             req.flash("error", "Penerbit Koran tidak boleh kosong")
             req.flash('data', req.body)
             return res.redirect(`/pustakawan/penerbit/edit/${id}`)
         }
 
-        // mengecek format file yang diinput
         if (req.file) {
             const allowedFormats = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
             if (!allowedFormats.includes(req.file.mimetype)) {
@@ -179,27 +187,34 @@ router.post('/update/:id', authPustakawan, upload.single('foto'), async (req, re
             }
         }
 
-        if (await PenerbitKoran.checkPenerbitKoranUpdate(data, id)) {
+        if (req.file && req.file.path) {
+            const isValidDimensions = await checkImageDimensions(req.file.path)
+            if (!isValidDimensions) {
+                deleteUploadedFile(req.file)
+                req.flash('error', 'Dimensi gambar harus 1:1 (persegi)')
+                return res.redirect(`/pustakawan/penerbit/edit/${id}`)
+            }
+        }
+
+        if (await PenerbitKoran.checkPenerbitKoranUpdate({nama_penerbit}, id)) {
             deleteUploadedFile(req.file)
             req.flash("error", "Penerbit Koran sudah dibuat")
             req.flash('data', req.body)
             return res.redirect(`/pustakawan/penerbit/edit/${id}`)
         }
 
-        //convert image to webp and compress when < 500kb
         if (req.file && req.file.path) {
             const result = await convertImageFile(req.file.path)
             if (result && result.outputPath) {
-                data.foto = path.basename(result.outputPath)
-                // hapus foto lama jika ada foto baru
-                if (penerbitKoran.foto) {
-                    deleteOldPhoto(penerbitKoran.foto)
-                }
+                foto = path.basename(result.outputPath)
             }
-        } else {
-            data.foto = foto
+            if (penerbitKoran.foto) deleteOldPhoto(penerbitKoran.foto)
+        } else if (hapus_foto === '1') {
+            if (penerbitKoran.foto) deleteOldPhoto(penerbitKoran.foto)
+            foto = null
         }
 
+        const data = {nama_penerbit, foto}
         await PenerbitKoran.update(data, id)
         req.flash('success', 'Data berhasil diedit')
         res.redirect('/pustakawan/penerbit')
@@ -220,7 +235,6 @@ router.post('/hapus/:id', authPustakawan, async (req, res) => {
             return res.redirect(`/pustakawan/penerbit`)
         }
 
-        // hapus foto sebelum hapus data
         const penerbitKoran = await PenerbitKoran.getFotoById(id)
         if (penerbitKoran && penerbitKoran.foto) {
             deleteOldPhoto(penerbitKoran.foto)
