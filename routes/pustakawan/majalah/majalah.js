@@ -339,6 +339,8 @@ router.post('/create-batch-majalah', authPustakawan, uploadBatch.array('files'),
         }
 
         const validDataList = []
+        const batchNoKlasifikasi = new Set()
+        const dbNoKlasifikasiCache = new Map()
 
         for (const [index, row] of rows.entries()) {
             const barisKe = index + 2
@@ -349,14 +351,12 @@ router.post('/create-batch-majalah', authPustakawan, uploadBatch.array('files'),
             const bahasaName = (row.bahasa || '').toString().trim()
             if (!bahasaName) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Bahasa wajib diisi pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/majalah')
             }
             const bahasaId = bahasaMap.get(bahasaName.toLowerCase())
             if (!bahasaId) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Bahasa "${bahasaName}" tidak ditemukan pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/majalah')
             }
@@ -364,22 +364,48 @@ router.post('/create-batch-majalah', authPustakawan, uploadBatch.array('files'),
             const kategoriName = (row.kategori || '').toString().trim()
             if (!kategoriName) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Kategori wajib diisi pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/majalah')
             }
             const kategoriId = await ensureKategoriId(kategoriName)
             if (!kategoriId) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Kategori "${kategoriName}" tidak dapat dibuat pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/majalah')
+            }
+
+            const noKlasifikasi = (row.no_klasifikasi || '').toString().trim()
+            if (!noKlasifikasi) {
+                deleteUploadedFile(files)
+                req.flash('error', `No klasifikasi wajib diisi pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/majalah')
+            }
+
+            if (batchNoKlasifikasi.has(noKlasifikasi)) {
+                deleteUploadedFile(files)
+                req.flash('error', `Duplikasi no klasifikasi dalam file Excel pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/majalah')
+            }
+            batchNoKlasifikasi.add(noKlasifikasi)
+
+            let existsNoKlasifikasi = false
+            if (dbNoKlasifikasiCache.has(noKlasifikasi)) {
+                existsNoKlasifikasi = dbNoKlasifikasiCache.get(noKlasifikasi)
+            } else {
+                existsNoKlasifikasi = await Majalah.checkNoKlasifikasiCreate({ no_klasifikasi: noKlasifikasi })
+                dbNoKlasifikasiCache.set(noKlasifikasi, existsNoKlasifikasi)
+            }
+
+            if (existsNoKlasifikasi) {
+                deleteUploadedFile(files)
+                req.flash('error', `No klasifikasi "${noKlasifikasi}" sudah ada di database pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/majalah')
             }
 
             const data = {
                 judul: row.judul,
                 edisi: row.edisi,
-                no_klasifikasi: row.no_klasifikasi,
+                no_klasifikasi: noKlasifikasi,
                 id_bahasa: bahasaId,
                 tahun_terbit: row.tahun_terbit,
                 sinopsis: row.sinopsis,
@@ -393,7 +419,6 @@ router.post('/create-batch-majalah', authPustakawan, uploadBatch.array('files'),
 
             if (!filename) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Foto cover "${row.foto_cover}" tidak ditemukan pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/majalah')
             }
@@ -401,29 +426,18 @@ router.post('/create-batch-majalah', authPustakawan, uploadBatch.array('files'),
             const uploadedImage = imageFiles.find(f => f.filename === filename)
             if (uploadedImage && uploadedImage.size > 2 * 1024 * 1024) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Ukuran foto cover "${row.foto_cover}" pada baris ke-${barisKe} melebihi 2MB`)
                 return res.redirect('/pustakawan/majalah')
             }
 
             if (!data.id_rak) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Rak dengan kode "${row.kode_rak}" tidak ditemukan pada baris ke-${barisKe}`)
-                return res.redirect('/pustakawan/majalah')
-            }
-
-            const checkNoKlasifikasi = await Majalah.checkNoKlasifikasiCreate({ no_klasifikasi: data.no_klasifikasi })
-            if (checkNoKlasifikasi) {
-                deleteUploadedFile(files)
-
-                req.flash('error', `No klasifikasi "${data.no_klasifikasi}" sudah digunakan pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/majalah')
             }
 
             if (!data.judul || !data.edisi || !data.no_klasifikasi || !data.id_rak || !data.foto_cover || !data.id_bahasa || !data.id_kategori) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Data tidak lengkap pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/majalah')
             }
@@ -432,26 +446,54 @@ router.post('/create-batch-majalah', authPustakawan, uploadBatch.array('files'),
         }
 
         const digunakanFotoNames = new Set()
+        const convertedFiles = []
+        const conversionCache = new Map()
 
-        for (const item of validDataList) {
-            const srcFile = filenameToFile[item.filename]
-            if (srcFile && srcFile.path) {
-                try {
-                    const result = await convertImageFile(srcFile.path)
-                    if (result && result.outputPath) {
-                        item.data.foto_cover = path.basename(result.outputPath)
-                        digunakanFotoNames.add(path.basename(result.outputPath))
+        try {
+            for (let idx = 0; idx < validDataList.length; idx++) {
+                const item = validDataList[idx]
+                const barisKe = idx + 2
+                const srcFile = filenameToFile[item.filename]
+                if (srcFile && srcFile.path) {
+                    if (conversionCache.has(item.filename)) {
+                        const convertedFilename = conversionCache.get(item.filename)
+                        item.data.foto_cover = convertedFilename
+                        digunakanFotoNames.add(convertedFilename)
                     } else {
-                        digunakanFotoNames.add(item.filename)
+                        try {
+                            const result = await convertImageFile(srcFile.path)
+                            if (result && result.outputPath) {
+                                const convertedFilename = path.basename(result.outputPath)
+                                conversionCache.set(item.filename, convertedFilename)
+                                item.data.foto_cover = convertedFilename
+                                digunakanFotoNames.add(convertedFilename)
+                                convertedFiles.push(convertedFilename)
+                            } else {
+                                digunakanFotoNames.add(item.filename)
+                            }
+                        } catch (e) {
+                            deleteUploadedFile(files)
+                            for (const converted of convertedFiles) {
+                                deleteOldPhoto(converted)
+                            }
+                            req.flash('error', `Gagal mengkonversi gambar pada baris ke-${barisKe}`)
+                            return res.redirect('/pustakawan/majalah')
+                        }
                     }
-                } catch (e) {
+                } else {
                     digunakanFotoNames.add(item.filename)
                 }
-            } else {
-                digunakanFotoNames.add(item.filename)
-            }
 
-            await Majalah.store(item.data)
+                await Majalah.store(item.data)
+            }
+        } catch (storeErr) {
+            console.error('Error saat menyimpan data:', storeErr)
+            deleteUploadedFile(files)
+            for (const converted of convertedFiles) {
+                deleteOldPhoto(converted)
+            }
+            req.flash('error', 'Gagal menyimpan data. Tidak ada data yang tersimpan.')
+            return res.redirect('/pustakawan/majalah')
         }
 
         for (const file of imageFiles) {

@@ -41,7 +41,7 @@
                                 <label for="tahun_terbit">Tahun Terbit</label>
                                 <select class="form-control" id="tahun_terbit" name="tahun_terbit">
                                     <option value="">Pilih Tahun</option>
-                                    <% for (let year = 2100; year >= 1800; year--) { %>
+                                    <% for (let year = 2040; year >= 1940; year--) { %>
                                         <option value="<%= year %>" <%= (data && data.tahun_terbit == year) ? 'selected' : '' %>><%= year %></option>
                                     <% } %>
                                 </select>
@@ -86,7 +86,6 @@
                                 </select>
                             </div>
 
-                            <div class="form-group">
                             <div class="form-group">
                                 <label for="foto_cover">Foto Cover</label>
                                 <input type="file" class="form-control" id="foto_cover" name="foto_cover" accept="image/*" data-preview="previewTambah" required>
