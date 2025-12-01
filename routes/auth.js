@@ -1,17 +1,16 @@
 const express = require('express')
-const router = express.Router()
-const Pegawai = require('../models/Pegawai')
 const bcrypt = require('bcryptjs')
 
-// Login Pustakawan
-router.get('/masuk-pustakawan', (req, res) => {
+const Pegawai = require('../models/Pegawai')
+
+const router = express.Router()
+
+router.get('/masuk-pustakawan', async (req, res) => {
     try {
-        res.render('auth/login-pustakawan', {
-            data: req.flash('data')[0]
-        })
+        res.render('auth/login-pustakawan', { data: req.flash('data')[0] })
     } catch (err) {
         console.error(err)
-        req.flash('error', "Internal Server Error")
+        req.flash('error', 'Internal server error')
         res.redirect('/')
     }
 })
@@ -34,9 +33,8 @@ router.post('/log-pustakawan', async (req, res) => {
         }
 
         const pegawai = await Pegawai.login(data)
-
         if (!pegawai) {
-            req.flash('error', 'Nomor Pegawai yang Anda masukkan salah')
+            req.flash('error', 'Nomor Pegawai yang anda masukkan salah')
             req.flash('data', data)
             return res.redirect('/masuk-pustakawan')
         }
@@ -51,7 +49,11 @@ router.post('/log-pustakawan', async (req, res) => {
             return res.redirect('/masuk-pustakawan')
         }
 
-        if (aplikasiEkatalog.hak_akses != 'pustakawan') {
+        const hasPustakawanAccess = pegawai.aplikasi.some(
+            app => app.nama_aplikasi == 'e-katalog' && app.hak_akses == 'pustakawan'
+        )
+
+        if (!hasPustakawanAccess) {
             req.flash('error', 'Akun Anda tidak memiliki hak akses sebagai Pustakawan')
             req.flash('data', data)
             return res.redirect('/masuk-pustakawan')
@@ -61,45 +63,44 @@ router.post('/log-pustakawan', async (req, res) => {
         const mulai = pegawai.periode_mulai ? new Date(pegawai.periode_mulai) : null
         const berakhir = pegawai.periode_berakhir ? new Date(pegawai.periode_berakhir) : null
 
-        if (mulai && berakhir && !(now >= mulai && now <= berakhir)) {
-            req.flash('error', 'Akun Anda tidak aktif pada periode ini')
+        if (mulai !== null && berakhir !== null) {
+            if (!(now >= mulai && now <= berakhir)) {
+                req.flash('error', 'Akun Anda tidak aktif pada periode ini')
+                req.flash('data', data)
+                return res.redirect('/masuk-pustakawan')
+            }
+        }
+
+        if (pegawai.status_akun != 'Aktif') {
+            req.flash('error', 'Akun Anda belum aktif, silakan hubungi Admin')
             req.flash('data', data)
             return res.redirect('/masuk-pustakawan')
         }
 
-        if (pegawai.status_akun !== 'Aktif') {
-            req.flash('error', 'Status akun belum aktif, silakan hubungi Manajer')
-            req.flash('data', data)
-            return res.redirect('/masuk-pustakawan')
-        }
-
-        if (!(await bcrypt.compare(kata_sandi, pegawai.kata_sandi))) {
-            req.flash('error', 'Kata Sandi yang Anda masukkan salah')
+        if (!await bcrypt.compare(kata_sandi, pegawai.kata_sandi)) {
+            req.flash('error', 'Kata sandi yang anda masukkan salah')
             req.flash('data', data)
             return res.redirect('/masuk-pustakawan')
         }
 
         req.session.pegawaiId = pegawai.id
-        req.session.hak_akses = aplikasiEkatalog.hak_akses
-
+        req.session.hak_akses = 'pustakawan'
+        req.flash('success', 'Anda berhasil masuk')
         return res.redirect('/pustakawan/dashboard')
 
     } catch (err) {
         console.error(err)
-        req.flash('error', "Internal Server Error")
+        req.flash('error', 'Internal server error')
         res.redirect('/masuk-pustakawan')
     }
 })
 
-// Login Manajer
-router.get('/masuk-manajer', (req, res) => {
+router.get('/masuk-manajer', async (req, res) => {
     try {
-        res.render('auth/login-manajer', {
-            data: req.flash('data')[0]
-        })
+        res.render('auth/login-manajer', { data: req.flash('data')[0] })
     } catch (err) {
         console.error(err)
-        req.flash('error', "Internal Server Error")
+        req.flash('error', 'Internal server error')
         res.redirect('/')
     }
 })
@@ -122,9 +123,8 @@ router.post('/log-manajer', async (req, res) => {
         }
 
         const pegawai = await Pegawai.login(data)
-
         if (!pegawai) {
-            req.flash('error', 'Nomor Pegawai yang Anda masukkan salah')
+            req.flash('error', 'Nomor Pegawai yang anda masukkan salah')
             req.flash('data', data)
             return res.redirect('/masuk-manajer')
         }
@@ -139,7 +139,11 @@ router.post('/log-manajer', async (req, res) => {
             return res.redirect('/masuk-manajer')
         }
 
-        if (aplikasiEkatalog.hak_akses != 'manajer') {
+        const hasManajerAccess = pegawai.aplikasi.some(
+            app => app.nama_aplikasi == 'e-katalog' && app.hak_akses == 'manajer'
+        )
+
+        if (!hasManajerAccess) {
             req.flash('error', 'Akun Anda tidak memiliki hak akses sebagai Manajer')
             req.flash('data', data)
             return res.redirect('/masuk-manajer')
@@ -149,32 +153,34 @@ router.post('/log-manajer', async (req, res) => {
         const mulai = pegawai.periode_mulai ? new Date(pegawai.periode_mulai) : null
         const berakhir = pegawai.periode_berakhir ? new Date(pegawai.periode_berakhir) : null
 
-        if (mulai && berakhir && !(now >= mulai && now <= berakhir)) {
-            req.flash('error', 'Akun Anda tidak aktif pada periode ini')
+        if (mulai !== null && berakhir !== null) {
+            if (!(now >= mulai && now <= berakhir)) {
+                req.flash('error', 'Akun Anda tidak aktif pada periode ini')
+                req.flash('data', data)
+                return res.redirect('/masuk-manajer')
+            }
+        }
+
+        if (pegawai.status_akun != 'Aktif') {
+            req.flash('error', 'Akun Anda belum aktif, silakan hubungi Admin')
             req.flash('data', data)
             return res.redirect('/masuk-manajer')
         }
 
-        if (pegawai.status_akun !== 'Aktif') {
-            req.flash('error', 'Status akun belum aktif, silakan hubungi Manajer')
-            req.flash('data', data)
-            return res.redirect('/masuk-manajer')
-        }
-
-        if (!(await bcrypt.compare(kata_sandi, pegawai.kata_sandi))) {
-            req.flash('error', 'Kata Sandi yang Anda masukkan salah')
+        if (!await bcrypt.compare(kata_sandi, pegawai.kata_sandi)) {
+            req.flash('error', 'Kata sandi yang anda masukkan salah')
             req.flash('data', data)
             return res.redirect('/masuk-manajer')
         }
 
         req.session.pegawaiId = pegawai.id
-        req.session.hak_akses = aplikasiEkatalog.hak_akses
-
+        req.session.hak_akses = 'manajer'
+        req.flash('success', 'Anda berhasil masuk')
         return res.redirect('/manajer/dashboard')
 
     } catch (err) {
         console.error(err)
-        req.flash('error', "Internal Server Error")
+        req.flash('error', 'Internal server error')
         res.redirect('/masuk-manajer')
     }
 })
@@ -186,8 +192,9 @@ router.get('/logout', async(req, res) => {
     } catch (err) {
         console.error(err)
         req.flash('error', 'Internal server error')
-        if (req.session.hak_akses == "manajer") return res.redirect('/manjer/dashboard')
         if (req.session.hak_akses == "pustakawan") return res.redirect('/pustakawan/dashboard')
+        if (req.session.hak_akses == "manajer") return res.redirect('/manajer/dashboard')
+        return res.redirect('/')
     }
 })
 
