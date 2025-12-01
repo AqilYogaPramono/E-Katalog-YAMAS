@@ -37,6 +37,15 @@ class Koran {
         }
     }
 
+    static async checkKoranUpdate(data, excludeId) {
+        try {
+            const [rows] = await connection.query(`SELECT id FROM koran WHERE id_penerbit_koran = ? AND tahun = ? AND bulan = ? AND status_data = 'Tampil' AND id != ? LIMIT 1`, [data.id_penerbit_koran, data.tahun, data.bulan, excludeId])
+            return rows.length > 0
+        } catch (err) {
+            throw err
+        }
+    }
+
     static async store(data) {
         try {
             const [rows] = await connection.query('INSERT INTO koran SET ?', [data])

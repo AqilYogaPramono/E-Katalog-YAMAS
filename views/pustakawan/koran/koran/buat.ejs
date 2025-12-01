@@ -26,7 +26,7 @@
                                 <label for="tahun">Tahun</label>
                                 <select class="form-control" id="tahun" name="tahun" required>
                                     <option value="">Pilih Tahun</option>
-                                    <% for (let y = 2100; y >= 1900; y--) { %>
+                                    <% for (let y = 2040; y >= 1940; y--) { %>
                                         <option value="<%= y %>" <%= (data && data.tahun == y) ? 'selected' : '' %>><%= y %></option>
                                     <% } %>
                                 </select>
@@ -73,86 +73,3 @@
 </div>
 
 <%- include('../../../partials/script/__script-dashboard.ejs') %>
-<script>
-    (function(){
-        var selectEl = document.getElementById('id_penerbit_koran');
-        var inputEl = document.getElementById('nama_penerbit_baru');
-        var formEl = document.querySelector('form[action="/pustakawan/koran/create"]');
-
-        if (!selectEl || !inputEl) return;
-
-        var defaultOpt = selectEl.options[0] ? { value: selectEl.options[0].value, text: selectEl.options[0].text } : { value: '', text: 'Pilih Penerbit' };
-        var allOptions = [];
-        for (var i = 0; i < selectEl.options.length; i++) {
-            var o = selectEl.options[i];
-            if (i === 0) continue;
-            allOptions.push({ value: o.value, text: o.text });
-        }
-
-        function renderOptions(list) {
-            while (selectEl.options.length) selectEl.remove(0);
-            var opt0 = document.createElement('option');
-            opt0.value = defaultOpt.value;
-            opt0.text = defaultOpt.text;
-            selectEl.add(opt0);
-            list.forEach(function(item){
-                var opt = document.createElement('option');
-                opt.value = item.value;
-                opt.text = item.text;
-                selectEl.add(opt);
-            });
-        }
-
-        function onQueryChange() {
-            var q = (inputEl.value || '').trim();
-            var ql = q.toLowerCase();
-            if (!q) {
-                renderOptions(allOptions);
-                selectEl.selectedIndex = 0;
-                return;
-            }
-            var matches = allOptions.filter(function(item){ return item.text.toLowerCase().indexOf(ql) !== -1; });
-            if (matches.length === 1) {
-                renderOptions(matches);
-                selectEl.selectedIndex = 1;
-                inputEl.value = '';
-                return;
-            }
-            if (matches.length > 1) {
-                renderOptions(matches);
-                selectEl.selectedIndex = 0;
-                return;
-            }
-            // no match: show virtual "<Tambah Baru>"
-            while (selectEl.options.length) selectEl.remove(0);
-            var optBase = document.createElement('option');
-            optBase.value = '';
-            optBase.text = 'Select an Option';
-            selectEl.add(optBase);
-            var optNew = document.createElement('option');
-            optNew.value = '';
-            optNew.text = q + ' <Tambah Baru>';
-            optNew.setAttribute('data-new', '1');
-            selectEl.add(optNew);
-            selectEl.selectedIndex = 1;
-        }
-
-        inputEl.addEventListener('input', onQueryChange);
-        selectEl.addEventListener('change', function(){
-            // if user picks existing option, clear typed new-name
-            var selVal = selectEl.value;
-            if (selVal) inputEl.value = '';
-        });
-
-        if (formEl) {
-            formEl.addEventListener('submit', function(e){
-                var hasSelect = !!selectEl.value;
-                var hasInput = !!(inputEl.value || '').trim();
-                if (!hasSelect && !hasInput) {
-                    e.preventDefault();
-                    try { window.alert('Pilih penerbit atau ketik nama penerbit baru.'); } catch(_) {}
-                }
-            });
-        }
-    })();
-</script>

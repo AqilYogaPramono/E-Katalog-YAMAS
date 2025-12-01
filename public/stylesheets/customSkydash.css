@@ -293,18 +293,29 @@
     align-items: center;
 }
 .filter-row > [class*="col-"] {
-    flex: 1 1 220px;
     margin-bottom: 0 !important;
 }
 .filter-row .filter-action-col {
     flex: 0 0 auto;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 .filter-row .form-control {
     width: 100%;
 }
+@media (min-width: 768px) {
+    .filter-row {
+        flex-wrap: nowrap;
+    }
+}
 @media (max-width: 767.98px) {
     .filter-row {
         gap: .5rem;
+    }
+    .filter-row > [class*="col-"] {
+        width: 100%;
+        max-width: 100%;
     }
     .filter-row .filter-action-col {
         width: 100%;
@@ -312,7 +323,6 @@
     }
     .filter-row .filter-action-col .btn {
         flex: 1 1 auto;
-        width: 100%;
     }
 }
 
