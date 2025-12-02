@@ -43,18 +43,18 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="tahun_terbit">Tahun Terbit</label>
-                                <select class="form-control" id="tahun_terbit" name="tahun_terbit">
-                                    <option value="">Pilih Tahun</option>
-                                    <% for (let year = 2100; year >= 1800; year--) { %>
-                                        <option value="<%= year %>" <%= (data && data.tahun_terbit == year) ? 'selected' : '' %>><%= year %></option>
-                                    <% } %>
-                                </select>
+                                <label for="tempat_terbit">Tempat Terbit</label>
+                                <input type="text" class="form-control" id="tempat_terbit" name="tempat_terbit" placeholder="Contoh: Jakarta" value="<%= (data && data.tempat_terbit) ? data.tempat_terbit : '' %>">
                             </div>
 
                             <div class="form-group">
-                                <label for="tempat_terbit">Tempat Terbit</label>
-                                <input type="text" class="form-control" id="tempat_terbit" name="tempat_terbit" placeholder="Contoh: Jakarta" value="<%= (data && data.tempat_terbit) ? data.tempat_terbit : '' %>">
+                                <label for="tahun_terbit">Tahun Terbit</label>
+                                <select class="form-control" id="tahun_terbit" name="tahun_terbit">
+                                    <option value="">Pilih Tahun</option>
+                                    <% for (let year = 2040; year >= 1940; year--) { %>
+                                        <option value="<%= year %>" <%= (data && data.tahun_terbit == year) ? 'selected' : '' %>><%= year %></option>
+                                    <% } %>
+                                </select>
                             </div>
 
                             <div class="form-group">
@@ -115,7 +115,6 @@
         </div>
     </div>
 </div>
-
 
 <div class="modal fade modal-below-navbar modal-top" id="globalImagePreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
