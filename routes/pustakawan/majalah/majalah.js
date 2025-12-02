@@ -31,6 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 const uploadBatch = multer({ storage })
+const imagesDir = path.join(__dirname, '../../../public/images/majalah')
 
 // Fungsi untuk menghapus file yang diupload
 const deleteUploadedFile = (input) => {
@@ -456,9 +457,26 @@ router.post('/create-batch-majalah', authPustakawan, uploadBatch.array('files'),
                 const srcFile = filenameToFile[item.filename]
                 if (srcFile && srcFile.path) {
                     if (conversionCache.has(item.filename)) {
-                        const convertedFilename = conversionCache.get(item.filename)
-                        item.data.foto_cover = convertedFilename
-                        digunakanFotoNames.add(convertedFilename)
+                        const baseConvertedFilename = conversionCache.get(item.filename)
+                        const baseConvertedPath = path.join(imagesDir, baseConvertedFilename)
+
+                        if (!fs.existsSync(baseConvertedPath)) {
+                            deleteUploadedFile(files)
+                            for (const converted of convertedFiles) {
+                                deleteOldPhoto(converted)
+                            }
+                            req.flash('error', `File cover tidak ditemukan saat menyalin gambar pada baris ke-${barisKe}`)
+                            return res.redirect('/pustakawan/majalah')
+                        }
+
+                        const copyFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(baseConvertedFilename) || '.webp'}`
+                        const copyPath = path.join(imagesDir, copyFilename)
+
+                        fs.copyFileSync(baseConvertedPath, copyPath)
+
+                        item.data.foto_cover = copyFilename
+                        digunakanFotoNames.add(copyFilename)
+                        convertedFiles.push(copyFilename)
                     } else {
                         try {
                             const result = await convertImageFile(srcFile.path)
