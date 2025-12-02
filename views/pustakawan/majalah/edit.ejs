@@ -38,19 +38,19 @@
                             </div>
 
                             <div class="form-group">
-                                    <label for="jumlah_halaman">Total Halaman</label>
+                                <label for="tempat_terbit">Tempat Terbit</label>
                                 <input type="text" class="form-control" id="tempat_terbit" name="tempat_terbit" placeholder="Contoh: Jakarta" value="<%= majalah.tempat_terbit || '' %>">
                             </div>
 
                             <div class="form-group">
-                                    <label for="tahun_terbit">Tahun Terbit</label>
+                                <label for="tahun_terbit">Tahun Terbit</label>
                                 <select class="form-control" id="tahun_terbit" name="tahun_terbit">
                                     <option value="">Pilih Tahun</option>
-                                    <% for (let year = 2100; year >= 1800; year--) { %>
+                                    <% for (let year = 2040; year >= 1940; year--) { %>
                                         <option value="<%= year %>" <%= (majalah.tahun_terbit == year) ? 'selected' : '' %>><%= year %></option>
                                     <% } %>
                                 </select>
-                                </div>
+                            </div>
 
                             <div class="form-group">
                                     <label for="penerbit">Penerbit</label>

@@ -31,6 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 const uploadBatch = multer({ storage })
+const imagesDir = path.join(__dirname, '../../../public/images/buku')
 
 // Fungsi untuk menghapus file yang diupload
 const deleteUploadedFile = (input) => {
@@ -273,8 +274,7 @@ router.post('/create', authPustakawan, upload.single('foto_cover'), async (req, 
 router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), async (req, res) => {
     try {
         const files = req.files || []
-
-        const allowedFormats = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel' ]
+        const allowedFormats = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']
 
         for (const file of req.files) {
             if (!allowedFormats.includes(file.mimetype)) {
@@ -288,14 +288,10 @@ router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), as
         const imageFiles = files.filter(f => f.mimetype.startsWith('image'))
 
         if (!excelFile) {
-            req.flash('error', 'File Excel tidak ditemukan.')
             deleteUploadedFile(files)
+            req.flash('error', 'File Excel tidak ditemukan.')
             return res.redirect('/pustakawan/buku')
         }
-
-        // mendapatkan data pegawai dari session
-        const pegawaiId = req.session.pegawaiId
-        const pegawai = await Pegawai.getNama(pegawaiId)
 
         const imgMap = {}
         const filenameToFile = {}
@@ -309,7 +305,10 @@ router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), as
         const workbook = xlsx.readFile(excelFile.path)
         const sheet = workbook.Sheets[workbook.SheetNames[0]]
         const rows = xlsx.utils.sheet_to_json(sheet)
-        
+
+        const pegawaiId = req.session.pegawaiId
+        const pegawai = await Pegawai.getNama(pegawaiId)
+
         const rak = await Rak.getAll()
         const bahasaList = await Bahasa.getAll()
         const kategoriList = await Kategori.getAll()
@@ -351,6 +350,10 @@ router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), as
         }
 
         const validDataList = []
+        const batchNoKlasifikasi = new Set()
+        const batchIsbnIssn = new Set()
+        const dbNoKlasifikasiCache = new Map()
+        const dbIsbnIssnCache = new Map()
 
         for (const [index, row] of rows.entries()) {
             const barisKe = index + 2
@@ -361,14 +364,12 @@ router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), as
             const bahasaName = (row.bahasa || '').toString().trim()
             if (!bahasaName) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Bahasa wajib diisi pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/buku')
             }
             const bahasaId = bahasaMap.get(bahasaName.toLowerCase())
             if (!bahasaId) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Bahasa "${bahasaName}" tidak ditemukan pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/buku')
             }
@@ -376,22 +377,76 @@ router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), as
             const kategoriName = (row.kategori || '').toString().trim()
             if (!kategoriName) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Kategori wajib diisi pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/buku')
             }
             const kategoriId = await ensureKategoriId(kategoriName)
             if (!kategoriId) {
                 deleteUploadedFile(files)
-
                 req.flash('error', `Kategori "${kategoriName}" tidak dapat dibuat pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/buku')
+            }
+
+            const noKlasifikasi = (row.no_klasifikasi || '').toString().trim()
+            if (!noKlasifikasi) {
+                deleteUploadedFile(files)
+                req.flash('error', `No klasifikasi wajib diisi pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/buku')
+            }
+
+            if (batchNoKlasifikasi.has(noKlasifikasi)) {
+                deleteUploadedFile(files)
+                req.flash('error', `Duplikasi no klasifikasi dalam file Excel pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/buku')
+            }
+            batchNoKlasifikasi.add(noKlasifikasi)
+
+            let existsNoKlasifikasi = false
+            if (dbNoKlasifikasiCache.has(noKlasifikasi)) {
+                existsNoKlasifikasi = dbNoKlasifikasiCache.get(noKlasifikasi)
+            } else {
+                existsNoKlasifikasi = await Buku.checkNoKlasifikasiCreate({ no_klasifikasi: noKlasifikasi })
+                dbNoKlasifikasiCache.set(noKlasifikasi, existsNoKlasifikasi)
+            }
+
+            if (existsNoKlasifikasi) {
+                deleteUploadedFile(files)
+                req.flash('error', `No klasifikasi "${noKlasifikasi}" sudah ada di database pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/buku')
+            }
+
+            const isbnIssn = (row.isbn_issn || '').toString().trim()
+            if (!isbnIssn) {
+                deleteUploadedFile(files)
+                req.flash('error', `ISBN/ISSN wajib diisi pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/buku')
+            }
+
+            if (batchIsbnIssn.has(isbnIssn)) {
+                deleteUploadedFile(files)
+                req.flash('error', `Duplikasi ISBN/ISSN dalam file Excel pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/buku')
+            }
+            batchIsbnIssn.add(isbnIssn)
+
+            let existsIsbnIssn = false
+            if (dbIsbnIssnCache.has(isbnIssn)) {
+                existsIsbnIssn = dbIsbnIssnCache.get(isbnIssn)
+            } else {
+                existsIsbnIssn = await Buku.checkIsbnIssnCreate({ isbn_issn: isbnIssn })
+                dbIsbnIssnCache.set(isbnIssn, existsIsbnIssn)
+            }
+
+            if (existsIsbnIssn) {
+                deleteUploadedFile(files)
+                req.flash('error', `ISBN/ISSN "${isbnIssn}" sudah ada di database pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/buku')
             }
 
             const data = {
                 judul: row.judul,
-                isbn_issn: row.isbn_issn,
-                no_klasifikasi: row.no_klasifikasi,
+                isbn_issn: isbnIssn,
+                no_klasifikasi: noKlasifikasi,
                 id_bahasa: bahasaId,
                 jumlah_halaman: row.jumlah_halaman,
                 tahun_terbit: row.tahun_terbit,
@@ -406,32 +461,27 @@ router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), as
             }
 
             if (!filename) {
-                req.flash('error', `Foto cover "${row.foto_cover}" tidak ditemukan pada baris ke-${barisKe}`)
                 deleteUploadedFile(files)
+                req.flash('error', `Foto cover "${row.foto_cover}" tidak ditemukan pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/buku')
+            }
+
+            const uploadedImage = imageFiles.find(f => f.filename === filename)
+            if (uploadedImage && uploadedImage.size > 2 * 1024 * 1024) {
+                deleteUploadedFile(files)
+                req.flash('error', `Ukuran foto cover "${row.foto_cover}" pada baris ke-${barisKe} melebihi 2MB`)
                 return res.redirect('/pustakawan/buku')
             }
 
             if (!data.id_rak) {
+                deleteUploadedFile(files)
                 req.flash('error', `Rak dengan kode "${row.kode_rak}" tidak ditemukan pada baris ke-${barisKe}`)
-                deleteUploadedFile(files)
-                return res.redirect('/pustakawan/buku')
-            }
-
-            if (await Buku.checkNoKlasifikasiCreate(data)) {
-                req.flash('error', `No klasifikasi "${data.no_klasifikasi}" sudah digunakan, pada baris ke-${barisKe}`)
-                deleteUploadedFile(files)
-                return res.redirect('/pustakawan/buku')
-            }
-
-            if (await Buku.checkIsbnIssnCreate(data)) {
-                req.flash('error', `ISBN/ISSN "${data.isbn_issn}" sudah digunakan, pada baris ke-${barisKe}`)
-                deleteUploadedFile(files)
                 return res.redirect('/pustakawan/buku')
             }
 
             if (!data.judul || !data.isbn_issn || !data.no_klasifikasi || !data.id_rak || !data.foto_cover || !data.id_bahasa || !data.id_kategori) {
-                req.flash('error', `Data tidak lengkap pada baris ke-${barisKe}`)
                 deleteUploadedFile(files)
+                req.flash('error', `Data tidak lengkap pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/buku')
             }
 
@@ -439,26 +489,71 @@ router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), as
         }
 
         const digunakanFotoNames = new Set()
+        const convertedFiles = []
+        const conversionCache = new Map()
 
-        for (const item of validDataList) {
-            const srcFile = filenameToFile[item.filename]
-            if (srcFile && srcFile.path) {
-                try {
-                    const result = await convertImageFile(srcFile.path)
-                    if (result && result.outputPath) {
-                        item.data.foto_cover = path.basename(result.outputPath)
-                        digunakanFotoNames.add(path.basename(result.outputPath))
+        try {
+            for (let idx = 0; idx < validDataList.length; idx++) {
+                const item = validDataList[idx]
+                const barisKe = idx + 2
+                const srcFile = filenameToFile[item.filename]
+                if (srcFile && srcFile.path) {
+                    if (conversionCache.has(item.filename)) {
+                        const baseConvertedFilename = conversionCache.get(item.filename)
+                        const baseConvertedPath = path.join(imagesDir, baseConvertedFilename)
+
+                        if (!fs.existsSync(baseConvertedPath)) {
+                            deleteUploadedFile(files)
+                            for (const converted of convertedFiles) {
+                                deleteOldPhoto(converted)
+                            }
+                            req.flash('error', `File cover tidak ditemukan saat menyalin gambar pada baris ke-${barisKe}`)
+                            return res.redirect('/pustakawan/buku')
+                        }
+
+                        const copyFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(baseConvertedFilename) || '.webp'}`
+                        const copyPath = path.join(imagesDir, copyFilename)
+
+                        fs.copyFileSync(baseConvertedPath, copyPath)
+
+                        item.data.foto_cover = copyFilename
+                        digunakanFotoNames.add(copyFilename)
+                        convertedFiles.push(copyFilename)
                     } else {
-                        digunakanFotoNames.add(item.filename)
+                        try {
+                            const result = await convertImageFile(srcFile.path)
+                            if (result && result.outputPath) {
+                                const convertedFilename = path.basename(result.outputPath)
+                                conversionCache.set(item.filename, convertedFilename)
+                                item.data.foto_cover = convertedFilename
+                                digunakanFotoNames.add(convertedFilename)
+                                convertedFiles.push(convertedFilename)
+                            } else {
+                                digunakanFotoNames.add(item.filename)
+                            }
+                        } catch (e) {
+                            deleteUploadedFile(files)
+                            for (const converted of convertedFiles) {
+                                deleteOldPhoto(converted)
+                            }
+                            req.flash('error', `Gagal mengkonversi gambar pada baris ke-${barisKe}`)
+                            return res.redirect('/pustakawan/buku')
+                        }
                     }
-                } catch (e) {
+                } else {
                     digunakanFotoNames.add(item.filename)
                 }
-            } else {
-                digunakanFotoNames.add(item.filename)
-            }
 
-            await Buku.store(item.data)
+                await Buku.store(item.data)
+            }
+        } catch (storeErr) {
+            console.error('Error saat menyimpan data:', storeErr)
+            deleteUploadedFile(files)
+            for (const converted of convertedFiles) {
+                deleteOldPhoto(converted)
+            }
+            req.flash('error', 'Gagal menyimpan data. Tidak ada data yang tersimpan.')
+            return res.redirect('/pustakawan/buku')
         }
 
         for (const file of imageFiles) {
@@ -473,13 +568,13 @@ router.post('/create-batch-buku', authPustakawan, uploadBatch.array('files'), as
         res.redirect('/pustakawan/buku')
 
     } catch (err) {
-        console.log(err)
+        console.error(err)
         if (req.files) {
             for (const file of req.files) {
                 fs.unlinkSync(file.path)
             }
         }
-        req.flash('error', 'Gagal mengunggah data Buku')
+        req.flash('error', 'Gagal mengunggah data buku')
         res.redirect('/pustakawan/buku')
     }
 })
