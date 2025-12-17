@@ -31,7 +31,13 @@ const deleteUploadedFile = (input) => {
         if (!file || !file.filename) continue
         const filePath = path.join(__dirname, '../../../public/images/penerbit-koran', file.filename)
         if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath)
+            try {
+                fs.unlinkSync(filePath)
+            } catch (err) {
+                if (err.code !== 'EBUSY' && err.code !== 'ENOENT') {
+                    console.error('Error deleting uploaded file:', err)
+                }
+            }
         }
     }
 }
@@ -39,7 +45,15 @@ const deleteUploadedFile = (input) => {
 const deleteOldPhoto = (oldPhoto) => {
     if (oldPhoto) {
         const filePath = path.join(__dirname, '../../../public/images/penerbit-koran', oldPhoto)
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath)
+            } catch (err) {
+                if (err.code !== 'EBUSY' && err.code !== 'ENOENT') {
+                    console.error('Error deleting old photo:', err)
+                }
+            }
+        }
     }
 }
 

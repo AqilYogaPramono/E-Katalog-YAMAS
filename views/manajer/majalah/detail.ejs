@@ -44,7 +44,10 @@
                                         <span class="info-label">Tahun Terbit: <%= (majalah && majalah.tahun_terbit) ? majalah.tahun_terbit : '-' %></span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Sinopsis: <%= (majalah && majalah.sinopsis) ? majalah.sinopsis : '-' %></span>
+                                        <span class="info-label">Sinopsis:</span>
+                                        <div class="sinopsis-text" style="margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.5;">
+                                            <%= (majalah && majalah.sinopsis) ? majalah.sinopsis : '-' %>
+                                        </div>
                                     </div>
                                     <div class="info-item">
                                         <span class="info-label">Ketersediaan: <%= (majalah && majalah.ketersediaan) ? majalah.ketersediaan : '-' %></span>

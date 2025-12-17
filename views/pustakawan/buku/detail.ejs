@@ -50,7 +50,10 @@
                                         <span class="info-label">Total Halaman: <%= (buku && buku.jumlah_halaman) ? buku.jumlah_halaman : '-' %></span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Sinopsis: <%= (buku && buku.sinopsis) ? buku.sinopsis : '-' %></span>
+                                        <span class="info-label">Sinopsis:</span>
+                                        <div class="sinopsis-text" style="margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.5;">
+                                            <%= (buku && buku.sinopsis) ? buku.sinopsis : '-' %>
+                                        </div>
                                     </div>
                                     <div class="info-item">
                                         <span class="info-label">Ketersediaan: <%= (buku && buku.ketersediaan) ? buku.ketersediaan : '-' %></span>

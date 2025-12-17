@@ -3,7 +3,7 @@ const connection = require('../configs/database')
 class Buku {
     static async searchBukuAPI(keyword) {
         try {
-            const [rows] = await connection.query(`SELECT b.id AS id, b.foto_cover AS 'foto-cover', b.judul AS judul, NULL AS edisi, b.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Buku' AS tipe FROM buku b LEFT JOIN rak r ON b.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE b.status_data = 'Tampil' AND b.judul LIKE CONCAT('%', ?, '%')`, [keyword])
+            const [rows] = await connection.query(`SELECT b.id AS id, b.foto_cover, b.judul AS judul, NULL AS edisi, b.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Buku' AS tipe FROM buku b LEFT JOIN rak r ON b.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE b.status_data = 'Tampil' AND b.judul LIKE CONCAT('%', ?, '%')`, [keyword])
             return rows
         } catch (err) {
             throw err
@@ -12,7 +12,7 @@ class Buku {
 
     static async advanceSearchBukuAPI(filters) {
         try {
-            let query = `SELECT b.id AS id, b.foto_cover AS 'foto-cover', b.judul AS judul, NULL AS edisi, b.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Buku' AS tipe FROM buku b LEFT JOIN rak r ON b.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id LEFT JOIN bahasa ba ON b.id_bahasa = ba.id LEFT JOIN kategori k ON b.id_kategori = k.id WHERE b.status_data = 'Tampil'`
+            let query = `SELECT b.id AS id, b.foto_cover, b.judul AS judul, NULL AS edisi, b.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Buku' AS tipe FROM buku b LEFT JOIN rak r ON b.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id LEFT JOIN bahasa ba ON b.id_bahasa = ba.id LEFT JOIN kategori k ON b.id_kategori = k.id WHERE b.status_data = 'Tampil'`
             const params = []
 
             if (filters.judul && filters.judul.trim()) {
@@ -59,7 +59,7 @@ class Buku {
 
     static async getNewBukuAPI() {
         try {
-            const [rows] = await connection.query(`SELECT b.id, b.judul, b.foto_cover, b.pengarang, 'Buku' AS tipe FROM buku b WHERE b.status_data = 'Tampil' ORDER BY b.dibuat_pada DESC LIMIT 4`)
+            const [rows] = await connection.query(`SELECT b.id, b.judul, b.foto_cover, b.pengarang FROM buku b WHERE b.status_data = 'Tampil' ORDER BY b.dibuat_pada DESC LIMIT 4`)
             return rows
         } catch (err) {
             throw err

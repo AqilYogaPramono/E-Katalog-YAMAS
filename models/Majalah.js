@@ -12,7 +12,7 @@ class Majalah {
 
     static async searchMajalahAPI(keyword) {
         try {
-            const [rows] = await connection.query(`SELECT m.id AS id, m.foto_cover AS 'foto-cover', m.judul AS judul, m.edisi AS edisi, m.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Majalah' AS tipe FROM majalah m LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.status_data = 'Tampil' AND (m.judul LIKE CONCAT('%', ?, '%') OR m.edisi LIKE CONCAT('%', ?, '%'))`, [keyword, keyword])
+            const [rows] = await connection.query(`SELECT m.id AS id, m.foto_cover, m.judul AS judul, m.edisi AS edisi, m.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Majalah' AS tipe FROM majalah m LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.status_data = 'Tampil' AND (m.judul LIKE CONCAT('%', ?, '%') OR m.edisi LIKE CONCAT('%', ?, '%'))`, [keyword, keyword])
             return rows
         } catch (err) {
             throw err
@@ -21,7 +21,7 @@ class Majalah {
 
     static async advanceSearchMajalahAPI(filters) {
         try {
-            let query = `SELECT m.id AS id, m.foto_cover AS 'foto-cover', m.judul AS judul, m.edisi AS edisi, m.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Majalah' AS tipe FROM majalah m LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id LEFT JOIN bahasa ba ON m.id_bahasa = ba.id LEFT JOIN kategori k ON m.id_kategori = k.id WHERE m.status_data = 'Tampil'`
+            let query = `SELECT m.id AS id, m.foto_cover, m.judul AS judul, m.edisi AS edisi, m.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Majalah' AS tipe FROM majalah m LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id LEFT JOIN bahasa ba ON m.id_bahasa = ba.id LEFT JOIN kategori k ON m.id_kategori = k.id WHERE m.status_data = 'Tampil'`
             const params = []
 
             if (filters.judul && filters.judul.trim()) {
@@ -68,7 +68,7 @@ class Majalah {
 
     static async getNewMajalahAPI() {
         try {
-            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi, 'Majalah' AS tipe FROM majalah m WHERE m.status_data = 'Tampil' ORDER BY m.dibuat_pada DESC LIMIT 4`)
+            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi FROM majalah m WHERE m.status_data = 'Tampil' ORDER BY m.dibuat_pada DESC LIMIT 4`)
             return rows
         } catch (err) {
             throw err

@@ -17,11 +17,7 @@ router.post('/buku/search', async (req, res) => {
 
         const result = await modelBuku.searchBukuAPI(keyword.trim())
 
-        if (!result || !result.length) {
-            return res.status(404).json({ message: 'Data tidak ditemukan' })
-        }
-        
-        res.status(200).json({ result })
+        res.status(200).json({ result: result || [] })
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error' })
@@ -38,11 +34,7 @@ router.post('/majalah/search', async (req, res) => {
 
         const result = await modelMajalah.searchMajalahAPI(keyword.trim())
 
-        if (!result || !result.length) {
-            return res.status(404).json({ message: 'Data tidak ditemukan' })
-        }
-        
-        res.status(200).json({ result })
+        res.status(200).json({ result: result || [] })
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error' })
@@ -69,11 +61,7 @@ router.post('/buku/advance-search', async (req, res) => {
 
         const result = await modelBuku.advanceSearchBukuAPI(filters)
 
-        if (!result || !result.length) {
-            return res.status(404).json({ message: 'Data tidak ditemukan' })
-        }
-        
-        res.status(200).json({ result })
+        res.status(200).json({ result: result || [] })
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error' })
@@ -100,11 +88,7 @@ router.post('/majalah/advance-search', async (req, res) => {
 
         const result = await modelMajalah.advanceSearchMajalahAPI(filters)
 
-        if (!result || !result.length) {
-            return res.status(404).json({ message: 'Data tidak ditemukan' })
-        }
-        
-        res.status(200).json({ result })
+        res.status(200).json({ result: result || [] })
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error' })
@@ -114,7 +98,7 @@ router.post('/majalah/advance-search', async (req, res) => {
 router.get('/bahasa', async (req, res) => {
     try {
         const data = await Bahasa.getAll()
-        return res.status(200).json({ data })
+        return res.status(200).json({ data: data || [] })
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error' })
@@ -124,7 +108,7 @@ router.get('/bahasa', async (req, res) => {
 router.get('/kategori', async (req, res) => {
     try {
         const data = await Kategori.getAll()
-        return res.status(200).json({ data })
+        return res.status(200).json({ data: data || [] })
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error' })
@@ -135,7 +119,7 @@ router.get('/new-buku', async (req, res) => {
     try {
         const data = await modelBuku.getNewBukuAPI()
 
-        return res.status(200).json({ data })
+        return res.status(200).json({ data: data || [] })
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error' })
@@ -146,7 +130,7 @@ router.get('/new-majalah', async (req, res) => {
     try {
         const data = await modelMajalah.getNewMajalahAPI()
 
-        return res.status(200).json({ data })
+        return res.status(200).json({ data: data || [] })
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error' })
