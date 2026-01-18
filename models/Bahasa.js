@@ -94,10 +94,7 @@ class Bahasa {
 
     static async getBahasa(limit, offset) {
         try {
-            const [rows] = await connection.query(
-                `SELECT id, bahasa FROM bahasa ORDER BY id ASC LIMIT ? OFFSET ?`,
-                [limit, offset]
-            )
+            const [rows] = await connection.query(`SELECT id, bahasa FROM bahasa ORDER BY id ASC LIMIT ? OFFSET ?`, [limit, offset])
             return rows
         } catch (err) {
             throw err

@@ -263,4 +263,5 @@ router.post('/hapus/:id', authPustakawan, async (req, res) => {
         res.redirect('/pustakawan/penerbit')
     }
 })
+
 module.exports = router

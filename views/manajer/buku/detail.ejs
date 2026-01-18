@@ -18,12 +18,22 @@
                                             <button type="button" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-target="#modalConfirmDelete">Hapus</button>
                                         </div>
                                     </div>
-                                    <img id="detailCover" class="img-click-preview" data-src="<%= buku && buku.foto_cover ? ('/images/buku/' + buku.foto_cover) : '/images/no-image.png' %>" src="<%= buku && buku.foto_cover ? ('/images/buku/' + buku.foto_cover) : '/images/no-image.png' %>" alt="cover" style="width:100%; max-width:220px; border-radius:12px; object-fit:cover;cursor:zoom-in;box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+
+                                    <img
+                                        id="detailCover"
+                                        class="img-click-preview"
+                                        data-src="<%= buku && buku.foto_cover ? ('/images/buku/' + buku.foto_cover) : '/images/no-image.png' %>"
+                                        src="<%= buku && buku.foto_cover ? ('/images/buku/' + buku.foto_cover) : '/images/no-image.png' %>"
+                                        alt="cover buku"
+                                        style="width:100%; max-width:220px; border-radius:12px; object-fit:cover; cursor:zoom-in; box-shadow:0 4px 20px rgba(0,0,0,0.1);"
+                                    >
                                 </div>
                             </div>
                             <div class="col-md-9">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h4 class="card-title mb-0"><%= (buku && buku.judul) ? buku.judul : '-' %></h4>
+                                    <h4 class="card-title mb-0">
+                                        <%= (buku && buku.judul) ? buku.judul : '-' %>
+                                    </h4>
                                     <div class="btn-actions d-none d-md-flex">
                                         <a href="/manajer/buku" class="btn btn-light btn-sm" data-loading>Kembali</a>
                                         <button type="button" class="btn btn-outline-success btn-sm" data-toggle="modal" data-target="#modalPulihkan">Tampilkan</button>
@@ -32,46 +42,122 @@
                                 </div>
                                 <div class="detail-info">
                                     <div class="info-item">
-                                        <span class="info-label">ISBN/ISSN: <%= (buku && buku.isbn_issn) ? buku.isbn_issn : 'Tidak Tersedia' %></span>
+                                        <span class="info-label">
+                                            ISBN/ISSN:
+                                            <%= buku?.isbn_issn || 'Tidak Tersedia' %>
+                                        </span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Nomor Klasifikasi: <%= (buku && buku.no_klasifikasi) ? buku.no_klasifikasi : '-' %></span>
+                                        <span class="info-label">
+                                            Nomor Klasifikasi:
+                                            <%= buku?.no_klasifikasi || '-' %>
+                                        </span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Bahasa: <%= (buku && buku.bahasa) ? buku.bahasa : '-' %></span>
+                                        <span class="info-label">
+                                            Kategori:
+                                            <%= buku?.nama_kategori || '-' %>
+                                        </span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Tahun Terbit: <%= (buku && buku.tahun_terbit) ? buku.tahun_terbit : '-' %></span>
+                                        <span class="info-label">
+                                            Bahasa:
+                                            <%= buku?.bahasa || '-' %>
+                                        </span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Total Halaman: <%= (buku && buku.jumlah_halaman) ? buku.jumlah_halaman : '-' %></span>
+                                        <span class="info-label">
+                                            Tahun Terbit:
+                                            <%= buku?.tahun_terbit || '-' %>
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">
+                                            Jumlah Halaman:
+                                            <%= buku?.jumlah_halaman || '-' %>
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">
+                                            Pengarang:
+                                            <%= buku?.pengarang || '-' %>
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">
+                                            Penerbit:
+                                            <%= buku?.penerbit || '-' %>
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">
+                                            Tempat Terbit:
+                                            <%= buku?.tempat_terbit || '-' %>
+                                        </span>
                                     </div>
                                     <div class="info-item">
                                         <span class="info-label">Sinopsis:</span>
-                                        <div class="sinopsis-text" style="margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.5;">
-                                            <%= (buku && buku.sinopsis) ? buku.sinopsis : '-' %>
+                                        <div
+                                            class="sinopsis-text"
+                                            style="
+                                                margin-top:4px;
+                                                display:-webkit-box;
+                                                -webkit-line-clamp:5;
+                                                line-clamp:5;
+                                                -webkit-box-orient:vertical;
+                                                overflow:hidden;
+                                                text-overflow:ellipsis;
+                                                line-height:1.5;
+                                            "
+                                        >
+                                            <%= buku?.sinopsis || '-' %>
                                         </div>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Ketersediaan: <%= (buku && buku.ketersediaan) ? buku.ketersediaan : '-' %></span>
+                                        <span class="info-label">
+                                            Ketersediaan:
+                                            <%= buku?.ketersediaan || '-' %>
+                                        </span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Kode Lantai: <%= (buku && buku.kode_lantai) ? buku.kode_lantai : '-' %></span>
+                                        <span class="info-label">
+                                            Kode Lantai:
+                                            <%= buku?.kode_lantai || '-' %>
+                                        </span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Kode Ruangan: <%= (buku && buku.kode_ruangan) ? buku.kode_ruangan : '-' %></span>
+                                        <span class="info-label">
+                                            Kode Ruangan:
+                                            <%= buku?.kode_ruangan || '-' %>
+                                        </span>
                                     </div>
+
                                     <div class="info-item">
-                                        <span class="info-label">Kode Rak: <%= (buku && buku.kode_rak) ? buku.kode_rak : '-' %></span>
+                                        <span class="info-label">
+                                            Kode Rak:
+                                            <%= buku?.kode_rak || '-' %>
+                                        </span>
                                     </div>
+
                                     <div class="info-item">
-                                        <span class="info-label">Dihapus Pada: <%= (buku && buku.dihapus_pada) ? new Date(buku.dihapus_pada).toLocaleString('id-ID') : '-' %></span>
+                                        <span class="info-label">
+                                            Dihapus Pada:
+                                            <%= buku?.dihapus_pada
+                                                ? new Date(buku.dihapus_pada).toLocaleString('id-ID')
+                                                : '-' %>
+                                        </span>
                                     </div>
+
                                     <div class="info-item">
-                                        <span class="info-label">Dihapus Oleh: <%= (buku && buku.dihapus_oleh) ? buku.dihapus_oleh : '-' %></span>
+                                        <span class="info-label">
+                                            Dihapus Oleh:
+                                            <%= buku?.dihapus_oleh || '-' %>
+                                        </span>
                                     </div>
+
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
