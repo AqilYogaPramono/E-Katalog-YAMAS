@@ -238,14 +238,15 @@ class Buku {
     }
 
     // mengambil semua data buku yang dihapus berdasarkan id
-    static async getByIdHapus(id) {
-        try {
-            const [rows] = await connection.query(`SELECT b.id, b.judul, b.foto_cover, b.isbn_issn, b.no_klasifikasi, b.id_bahasa, ba.bahasa AS nama_bahasa, b.jumlah_halaman, b.tahun_terbit, b.sinopsis, b.tempat_terbit, b.penerbit, b.id_kategori, k.kategori AS nama_kategori, b.pengarang, r.kode_rak, ru.kode_ruangan, l.kode_lantai, b.ketersediaan, b.dibuat_pada, b.diubah_pada, b.dibuat_oleh, b.diubah_oleh, b.status_data FROM buku b LEFT JOIN rak r ON b.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id LEFT JOIN bahasa ba ON b.id_bahasa = ba.id LEFT JOIN kategori k ON b.id_kategori = k.id WHERE b.status_data = 'Hapus' AND b.id = ?`, [id])
-            return rows[0]
-        } catch (err) {
-            throw err
-        }
+static async getByIdHapus(id) {
+    try {
+        const [rows] = await connection.query(`SELECT b.id, b.judul, b.foto_cover, b.isbn_issn, b.no_klasifikasi, b.id_bahasa, ba.bahasa AS bahasa, b.jumlah_halaman, b.tahun_terbit, b.sinopsis, b.tempat_terbit, b.penerbit, b.id_kategori, k.kategori AS nama_kategori, b.pengarang, r.kode_rak, ru.kode_ruangan, l.kode_lantai, b.ketersediaan, b.dihapus_pada, b.dihapus_oleh FROM buku b LEFT JOIN rak r ON b.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id LEFT JOIN bahasa ba ON b.id_bahasa = ba.id LEFT JOIN kategori k ON b.id_kategori = k.id WHERE b.status_data = 'Hapus' AND b.id = ?`, [id])
+        return rows[0]
+    } catch (err) {
+        throw err
     }
+}
+
 
     // mengambil semua data buku yang dihapus berdasarkan id
     static async getCoverByIdHapus(id) {

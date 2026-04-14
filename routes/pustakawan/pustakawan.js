@@ -16,7 +16,6 @@ router.get('/ubah-kata-sandi', authPustakawan, async (req, res) => {
         console.error(err)
         res.redirect('/pustakawan/dashboard')
     }
-
 })
 
 router.post('/change-password', authPustakawan, async (req, res) => {

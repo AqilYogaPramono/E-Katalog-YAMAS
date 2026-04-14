@@ -110,10 +110,7 @@ class Kategori {
 
     static async getKategori(limit, offset) {
         try {
-            const [rows] = await connection.query(
-                `SELECT id, kategori FROM kategori ORDER BY id ASC LIMIT ? OFFSET ?`,
-                [limit, offset]
-            )
+            const [rows] = await connection.query(`SELECT id, kategori FROM kategori ORDER BY id ASC LIMIT ? OFFSET ?`,[limit, offset])
             return rows
         } catch (err) {
             throw err
