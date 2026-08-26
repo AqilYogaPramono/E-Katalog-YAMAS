@@ -15,7 +15,6 @@ const deleteOldPhoto = (oldPhoto) => {
 
 router.get('/', authManajer, async (req, res) => {
     try {
-        // mendapatkan data pegawai dari session
         const pegawaiId = req.session.pegawaiId
         const pegawai = await Pegawai.getNama(pegawaiId)
 
@@ -26,7 +25,6 @@ router.get('/', authManajer, async (req, res) => {
 
         if (flashedKeyword) {
             const majalah = await Majalah.searchJudulMajalahHapus(flashedKeyword)
-            const totalMajalah = majalah.length
             const totalHalaman = 1
             return res.render('manajer/majalah/index', {majalah, pegawai, page: 1, totalHalaman, keyword: flashedKeyword})
         }
@@ -57,9 +55,7 @@ router.post('/search', authManajer, async (req, res) => {
 
 router.get('/:id', authManajer, async (req, res) => {
     try {
-        // mengambil id dari params
         const {id} = req.params
-        // mendapatkan data pegawai dari session
         const pegawaiId = req.session.pegawaiId
         const pegawai = await Pegawai.getNama(pegawaiId)
         

@@ -92,7 +92,53 @@ router.post('/create', authPustakawan, async (req, res) => {
     try {
         const { id_penerbit_koran, tahun, bulan } = req.body
         const pegawai = await Pegawai.getNama(req.session.pegawaiId)
-        const data = { id_penerbit_koran, tahun, bulan, dibuat_oleh: pegawai.nama }
+
+        if (!id_penerbit_koran) {
+            req.flash('error', 'Penerbit wajib diisi')
+            req.flash('data', req.body)
+            return res.redirect('/pustakawan/koran/buat')
+        }
+
+        if (!tahun) {
+            req.flash('error', 'Tahun wajib diisi')
+            req.flash('data', req.body)
+            return res.redirect('/pustakawan/koran/buat')
+        }
+
+        if (!bulan) {
+            req.flash('error', 'Bulan wajib diisi')
+            req.flash('data', req.body)
+            return res.redirect('/pustakawan/koran/buat')
+        }
+
+        const tahunNum = parseInt(tahun)
+        if (!/^\d{4}$/.test(tahun) || tahunNum < 1940 || tahunNum > 2040) {
+            req.flash('error', 'Tahun tidak valid (harus 4 digit antara 1940-2040)')
+            req.flash('data', req.body)
+            return res.redirect('/pustakawan/koran/buat')
+        }
+
+        const CANONICAL_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+        if (!CANONICAL_BULAN.includes(bulan)) {
+            req.flash('error', 'Bulan tidak valid')
+            req.flash('data', req.body)
+            return res.redirect('/pustakawan/koran/buat')
+        }
+
+        const exists = await Koran.checkKoran({ id_penerbit_koran, tahun: tahunNum, bulan })
+        if (exists) {
+            req.flash('error', 'Data koran dengan penerbit, tahun, dan bulan tersebut sudah ada')
+            req.flash('data', req.body)
+            return res.redirect('/pustakawan/koran/buat')
+        }
+
+        const data = { 
+            id_penerbit_koran, 
+            tahun: tahunNum, 
+            bulan, 
+            ketersediaan: 'Tersedia',
+            dibuat_oleh: pegawai.nama 
+        }
 
         await Koran.store(data)
         req.flash('success', 'Koran berhasil dibuat')
@@ -124,7 +170,10 @@ router.post('/create-batch-koran', authPustakawan, uploadExcel.single('file'), a
 
         const CANONICAL_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
         const BULAN_MAP = CANONICAL_BULAN.reduce((acc, b) => { acc[b.toLowerCase()] = b; return acc }, {})
-        const isValidYear = (y) => /^\d{4}$/.test(String(y || '').trim())
+        const isValidYear = (y) => {
+            const year = parseInt(String(y || '').trim())
+            return /^\d{4}$/.test(String(y || '').trim()) && year >= 1940 && year <= 2040
+        }
 
         const penerbitAll = await PenerbitKoran.getAll()
         const nameToId = new Map()
@@ -134,6 +183,10 @@ router.post('/create-batch-koran', authPustakawan, uploadExcel.single('file'), a
                 nameToId.set(String(p.nama_penerbit).trim().toLowerCase(), p.id)
             }
         }
+
+        const validDataList = []
+        const batchKeys = new Set()
+        const dbCheckCache = new Map()
 
         for (let i = 0; i < rows.length; i++) {
             const r = rows[i]
@@ -147,8 +200,9 @@ router.post('/create-batch-koran', authPustakawan, uploadExcel.single('file'), a
                 return res.redirect('/pustakawan/koran')
             }
 
+            const tahunNum = parseInt(tahun)
             if (!isValidYear(tahun)) {
-                req.flash('error', `Tahun tidak valid (harus 4 digit) pada baris ke-${barisKe}`)
+                req.flash('error', `Tahun tidak valid (harus 4 digit antara 1940-2040) pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/koran')
             }
 
@@ -166,15 +220,49 @@ router.post('/create-batch-koran', authPustakawan, uploadExcel.single('file'), a
                 return res.redirect('/pustakawan/koran')
             }
 
-            const exists = await Koran.checkKoran({ id_penerbit_koran: idPenerbit, tahun, bulan })
+            const batchKey = `${idPenerbit}-${bulan}-${tahunNum}`
+            if (batchKeys.has(batchKey)) {
+                req.flash('error', `Duplikasi data dalam file Excel pada baris ke-${barisKe}`)
+                return res.redirect('/pustakawan/koran')
+            }
+            batchKeys.add(batchKey)
+
+            const dbKey = `${idPenerbit}-${bulan}-${tahunNum}`
+            let exists = false
+            if (dbCheckCache.has(dbKey)) {
+                exists = dbCheckCache.get(dbKey)
+            } else {
+                exists = await Koran.checkKoran({ id_penerbit_koran: idPenerbit, tahun: tahunNum, bulan })
+                dbCheckCache.set(dbKey, exists)
+            }
+
             if (exists) {
-                req.flash('error', `Duplikasi data pada baris ke-${barisKe}`)
+                req.flash('error', `Data sudah ada di database pada baris ke-${barisKe}`)
                 return res.redirect('/pustakawan/koran')
             }
 
-            const data = { id_penerbit_koran: idPenerbit, tahun, bulan, dibuat_oleh: pegawai.nama }
+            const data = { 
+                id_penerbit_koran: idPenerbit, 
+                tahun: tahunNum, 
+                bulan, 
+                ketersediaan: 'Tersedia',
+                dibuat_oleh: pegawai.nama 
+            }
+            validDataList.push(data)
+        }
 
-            await Koran.store(data)
+        try {
+            for (const data of validDataList) {
+                await Koran.store(data)
+            }
+        } catch (storeErr) {
+            console.error('Error saat menyimpan data:', storeErr)
+            if (storeErr.code === 'ER_DUP_ENTRY') {
+                req.flash('error', 'Terjadi duplikasi data saat menyimpan. Tidak ada data yang tersimpan.')
+            } else {
+                req.flash('error', 'Gagal menyimpan data. Tidak ada data yang tersimpan.')
+            }
+            return res.redirect('/pustakawan/koran')
         }
 
         req.flash('success', 'Data Koran berhasil diunggah')
@@ -209,11 +297,45 @@ router.post('/update/:id', authPustakawan, async (req, res) => {
         const { id } = req.params
         const { id_penerbit_koran, tahun, bulan, ketersediaan } = req.body
         const pegawai = await Pegawai.getNama(req.session.pegawaiId)
-        const data = { id_penerbit_koran, tahun, bulan, ketersediaan, diubah_oleh: pegawai.nama }
 
-        if (!data.id_penerbit_koran || !data.tahun || !data.bulan) {
-            req.flash('error', 'Penerbit, tahun, dan bulan wajib diisi')
+        if (!id_penerbit_koran) {
+            req.flash('error', 'Penerbit wajib diisi')
             return res.redirect(`/pustakawan/koran/edit/${id}`)
+        }
+
+        if (!tahun) {
+            req.flash('error', 'Tahun wajib diisi')
+            return res.redirect(`/pustakawan/koran/edit/${id}`)
+        }
+
+        if (!bulan) {
+            req.flash('error', 'Bulan wajib diisi')
+            return res.redirect(`/pustakawan/koran/edit/${id}`)
+        }
+
+        const tahunNum = parseInt(tahun)
+        if (!/^\d{4}$/.test(tahun) || tahunNum < 1940 || tahunNum > 2040) {
+            req.flash('error', 'Tahun tidak valid (harus 4 digit antara 1940-2040)')
+            return res.redirect(`/pustakawan/koran/edit/${id}`)
+        }
+
+        const CANONICAL_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+        if (!CANONICAL_BULAN.includes(bulan)) {
+            req.flash('error', 'Bulan tidak valid')
+            return res.redirect(`/pustakawan/koran/edit/${id}`)
+        }
+
+        const exists = await Koran.checkKoranUpdate({ id_penerbit_koran, tahun: tahunNum, bulan }, id)
+        if (exists) {
+            req.flash('error', 'Data koran dengan penerbit, tahun, dan bulan tersebut sudah ada')
+            return res.redirect(`/pustakawan/koran/edit/${id}`)
+        }
+
+        const data = { 
+            id_penerbit_koran, 
+            tahun: tahunNum, 
+            bulan, 
+            diubah_oleh: pegawai.nama 
         }
 
         await Koran.update(data, id)

@@ -107,6 +107,34 @@ class Kategori {
             throw err
         }
     }
+
+    static async getKategori(limit, offset) {
+        try {
+            const [rows] = await connection.query(`SELECT id, kategori FROM kategori ORDER BY id ASC LIMIT ? OFFSET ?`,[limit, offset])
+            return rows
+        } catch (err) {
+            throw err
+        }
+    }
+
+    static async searchByKategori(keyword) {
+        try {
+            const likeKeyword = `%${keyword}%`
+            const [rows] = await connection.query(`SELECT * FROM kategori WHERE kategori LIKE ? ORDER BY id ASC`, [likeKeyword])
+            return rows
+        } catch (err) {
+            throw err
+        }
+    }
+
+    static async getCountKategori() {
+        try {
+            const [rows] = await connection.query(`SELECT COUNT(id) AS total_kategori FROM kategori`)
+            return rows
+        } catch (err) {
+            throw err
+        }
+    }
 }
 
 module.exports = Kategori

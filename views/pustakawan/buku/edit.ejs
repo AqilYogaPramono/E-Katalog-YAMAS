@@ -11,19 +11,19 @@
                         <h4 class="card-title">Edit Buku</h4>
                         <form action="/pustakawan/buku/update/<%= buku.id %>" method="POST" enctype="multipart/form-data" data-loading>
                             <div class="form-group">
-                                    <label for="judul">Judul</label>
+                                <label for="judul">Judul</label>
                                 <input type="text" class="form-control" id="judul" name="judul" placeholder="Masukkan judul buku" value="<%= buku.judul %>" required>
-                                </div>
+                            </div>
 
                             <div class="form-group">
-                                    <label for="isbn_issn">ISBN/ISSN</label>
+                                <label for="isbn_issn">ISBN/ISSN</label>
                                 <input type="text" class="form-control" id="isbn_issn" name="isbn_issn" placeholder="Contoh: 978-123-456-789" value="<%= buku.isbn_issn %>" required>
                             </div>
 
                             <div class="form-group">
-                                    <label for="no_klasifikasi">No Klasifikasi</label>
-                                <input type="text" class="form-control" id="no_klasifikasi" name="no_klasifikasi" placeholder="Contoh: 001.234" value="<%= buku.no_klasifikasi %>" required>
-                                </div>
+                                <label for="no_klasifikasi">No Klasifikasi</label>
+                                <input type="text" class="form-control" id="no_klasifikasi" name="no_klasifikasi" placeholder="Contoh: 0340.59 LUB h" value="<%= buku.no_klasifikasi %>" required>
+                            </div>
 
                             <div class="form-group">
                                 <label for="id_bahasa">Bahasa</label>
@@ -38,27 +38,27 @@
                             </div>
 
                             <div class="form-group">
-                                    <label for="jumlah_halaman">Total Halaman</label>
+                                <label for="jumlah_halaman">Total Halaman</label>
                                 <input type="number" class="form-control" id="jumlah_halaman" name="jumlah_halaman" placeholder="Contoh: 250" value="<%= buku.jumlah_halaman || '' %>">
                             </div>
 
                             <div class="form-group">
-                                    <label for="tahun_terbit">Tahun Terbit</label>
+                                <label for="tempat_terbit">Tempat Terbit</label>
+                                <input type="text" class="form-control" id="tempat_terbit" name="tempat_terbit" placeholder="Contoh: Jakarta" value="<%= buku.tempat_terbit || '' %>">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tahun_terbit">Tahun Terbit</label>
                                 <select class="form-control" id="tahun_terbit" name="tahun_terbit">
                                     <option value="">Pilih Tahun</option>
-                                    <% for (let year = 2100; year >= 1800; year--) { %>
+                                    <% for (let year = 2040; year >= 1940; year--) { %>
                                         <option value="<%= year %>" <%= (buku.tahun_terbit == year) ? 'selected' : '' %>><%= year %></option>
                                     <% } %>
                                 </select>
-                                </div>
+                            </div>
 
                             <div class="form-group">
-                                    <label for="tempat_terbit">Tempat Terbit</label>
-                                <input type="text" class="form-control" id="tempat_terbit" name="tempat_terbit" placeholder="Contoh: Jakarta" value="<%= buku.tempat_terbit || '' %>">
-                                </div>
-
-                            <div class="form-group">
-                                    <label for="penerbit">Penerbit</label>
+                                <label for="penerbit">Penerbit</label>
                                 <input type="text" class="form-control" id="penerbit" name="penerbit" placeholder="Contoh: Gramedia Pustaka Utama" value="<%= buku.penerbit || '' %>">
                             </div>
 
@@ -75,7 +75,7 @@
                             </div>
 
                             <div class="form-group">
-                                    <label for="pengarang">Pengarang</label>
+                                <label for="pengarang">Pengarang</label>
                                 <input type="text" class="form-control" id="pengarang" name="pengarang" placeholder="Contoh: Ahmad Tohari" value="<%= buku.pengarang || '' %>">
                             </div>
 
@@ -85,27 +85,27 @@
                             </div>
 
                             <div class="form-group">
-                                    <label for="id_rak">Rak</label>
-                                    <select class="form-control" id="id_rak" name="id_rak" required>
-                                        <option value="">Pilih Rak</option>
-                                        <% if (Array.isArray(rak) && rak.length) { %>
-                                            <% rak.forEach(function(item){ %>
-                                                <option value="<%= item.id %>" <%= (buku.id_rak == item.id) ? 'selected' : '' %>><%= item.kode_rak %> - <%= item.kode_ruangan %> - <%= item.kode_lantai %></option>
-                                            <% }) %>
-                                        <% } %>
-                                    </select>
-                                </div>
-
-                            <div class="form-group">
-                                    <label for="ketersediaan">Ketersediaan</label>
-                                    <select class="form-control" id="ketersediaan" name="ketersediaan">
-                                        <option value="Tersedia" <%= (buku.ketersediaan === 'Tersedia') ? 'selected' : '' %>>Tersedia</option>
-                                        <option value="Tidak Tersedia" <%= (buku.ketersediaan === 'Tidak Tersedia') ? 'selected' : '' %>>Tidak Tersedia</option>
-                                    </select>
+                                <label for="id_rak">Rak</label>
+                                <select class="form-control" id="id_rak" name="id_rak" required>
+                                    <option value="">Pilih Rak</option>
+                                    <% if (Array.isArray(rak) && rak.length) { %>
+                                        <% rak.forEach(function(item){ %>
+                                            <option value="<%= item.id %>" <%= (buku.id_rak == item.id) ? 'selected' : '' %>><%= item.kode_rak %> - <%= item.kode_ruangan %> - <%= item.kode_lantai %></option>
+                                        <% }) %>
+                                    <% } %>
+                                </select>
                             </div>
 
                             <div class="form-group">
-                                    <label for="foto_cover">Ganti Foto Cover</label>
+                                <label for="ketersediaan">Ketersediaan</label>
+                                <select class="form-control" id="ketersediaan" name="ketersediaan">
+                                    <option value="Tersedia" <%= (buku.ketersediaan === 'Tersedia') ? 'selected' : '' %>>Tersedia</option>
+                                    <option value="Tidak Tersedia" <%= (buku.ketersediaan === 'Tidak Tersedia') ? 'selected' : '' %>>Tidak Tersedia</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="foto_cover">Ganti Foto Cover</label>
                                 <input type="file" class="form-control" id="foto_cover" name="foto_cover" accept="image/*" data-preview="previewEdit">
                                 <div class="mt-2">
                                     <img id="previewEdit" src="<%= buku.foto_cover ? ('/images/buku/' + buku.foto_cover) : '/images/no-image.png' %>" data-src="<%= buku.foto_cover ? ('/images/buku/' + buku.foto_cover) : '/images/no-image.png' %>" alt="cover" style="height:300px;border-radius:8px;object-fit:cover;cursor:zoom-in;" class="img-click-preview">

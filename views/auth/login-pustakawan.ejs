@@ -1,4 +1,4 @@
-<%- include('../partials/header/__header-auth.ejs', { title: 'Login' }) %>
+<%- include('../partials/header/__header-auth.ejs', { title: 'Masuk Pustakawan' }) %>
 <%- include('../partials/messages/__messages-auth.ejs') %>
     <section class="hero-section">
         <div class="brand-logo">
@@ -6,7 +6,7 @@
         </div>
         <div class="auth-form-light login-box">
             <a href="/" class="close-icon" aria-label="Kembali ke beranda">&times;</a>
-            <h2>Login</h2>
+            <h2>Masuk Pustakawan</h2>
             <form action="/log-pustakawan" method="POST">
                 <div class="form-group">
                     <div class="input-group">
@@ -23,7 +23,7 @@
                     <div id="validation-error" class="text-danger mt-2"></div>
                 </div>
                 <div class="mt-3 text-center">
-                    <button type="submit" class="btn auth-form-btn">Login</button>
+                    <button type="submit" class="btn auth-form-btn">Masuk</button>
                 </div>
             </form>
         </div>

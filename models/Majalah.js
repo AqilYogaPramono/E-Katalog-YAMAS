@@ -1,10 +1,65 @@
 const connection = require('../configs/database')
 
 class Majalah {
-    // mengambil detail majalah berdasarkan id
     static async getDetailMajalah(id) {
         try {
-            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi, m.no_klasifikasi, b.bahasa AS nama_bahasa, m.tahun_terbit, m.sinopsis, m.tempat_terbit, m.penerbit, k.kategori AS nama_kategori, m.ketersediaan, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi FROM majalah m LEFT JOIN bahasa b ON m.id_bahasa = b.id LEFT JOIN kategori k ON m.id_kategori = k.id LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.id = 1 AND m.status_data = 'Tampil'`,[id])
+            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi, m.no_klasifikasi, b.bahasa AS nama_bahasa, m.tahun_terbit, m.sinopsis, m.tempat_terbit, m.penerbit, k.kategori AS nama_kategori, m.ketersediaan, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi FROM majalah m LEFT JOIN bahasa b ON m.id_bahasa = b.id LEFT JOIN kategori k ON m.id_kategori = k.id LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.id = ? AND m.status_data = 'Tampil'`, [id])
+            return rows
+        } catch (err) {
+            throw err
+        }
+    }
+
+    static async searchMajalahAPI(keyword) {
+        try {
+            const [rows] = await connection.query(`SELECT m.id AS id, m.foto_cover, m.judul AS judul, m.edisi AS edisi, m.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Majalah' AS tipe FROM majalah m LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.status_data = 'Tampil' AND (m.judul LIKE CONCAT('%', ?, '%') OR m.edisi LIKE CONCAT('%', ?, '%'))`, [keyword, keyword])
+            return rows
+        } catch (err) {
+            throw err
+        }
+    }
+
+    static async advanceSearchMajalahAPI(filters) {
+        try {
+            let query = `SELECT m.id AS id, m.foto_cover, m.judul AS judul, m.edisi AS edisi, m.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi, 'Majalah' AS tipe FROM majalah m LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id LEFT JOIN bahasa ba ON m.id_bahasa = ba.id LEFT JOIN kategori k ON m.id_kategori = k.id WHERE m.status_data = 'Tampil'`
+            const params = []
+
+            if (filters.judul && filters.judul.trim()) {
+                query += ` AND m.judul LIKE ?`
+                params.push(`%${filters.judul.trim()}%`)
+            }
+
+            if (filters.edisi && filters.edisi.trim()) {
+                query += ` AND m.edisi LIKE ?`
+                params.push(`%${filters.edisi.trim()}%`)
+            }
+
+            if (filters.no_klasifikasi && filters.no_klasifikasi.trim()) {
+                query += ` AND m.no_klasifikasi LIKE ?`
+                params.push(`%${filters.no_klasifikasi.trim()}%`)
+            }
+
+            if (filters.id_bahasa) {
+                query += ` AND m.id_bahasa = ?`
+                params.push(filters.id_bahasa)
+            }
+
+            if (filters.id_kategori) {
+                query += ` AND m.id_kategori = ?`
+                params.push(filters.id_kategori)
+            }
+
+            if (filters.tahun_terbit) {
+                query += ` AND m.tahun_terbit = ?`
+                params.push(filters.tahun_terbit)
+            }
+
+            if (filters.penerbit && filters.penerbit.trim()) {
+                query += ` AND m.penerbit LIKE ?`
+                params.push(`%${filters.penerbit.trim()}%`)
+            }
+
+            const [rows] = await connection.query(query, params)
             return rows
         } catch (err) {
             throw err
@@ -13,7 +68,7 @@ class Majalah {
 
     static async getNewMajalahAPI() {
         try {
-            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi, 'Majalah' AS tipe FROM majalah m WHERE m.status_data = 'Tampil' ORDER BY m.dibuat_pada DESC LIMIT 4`)
+            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi FROM majalah m WHERE m.status_data = 'Tampil' ORDER BY m.dibuat_pada DESC LIMIT 4`)
             return rows
         } catch (err) {
             throw err
@@ -23,26 +78,7 @@ class Majalah {
     // mengambil semua majalah dengan status data tampil dengan limit dan offset
     static async getMajalah(limit, offset) {
         try {
-            const [rows] = await connection.query(`
-                SELECT 
-                    m.id,
-                    m.judul,
-                    m.foto_cover,
-                    m.edisi,
-                    m.no_klasifikasi,
-                    b.bahasa AS nama_bahasa,
-                    k.kategori AS nama_kategori,
-                    CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi_majalah
-                FROM majalah m
-                LEFT JOIN bahasa b ON m.id_bahasa = b.id
-                LEFT JOIN kategori k ON m.id_kategori = k.id
-                LEFT JOIN rak r ON m.id_rak = r.id
-                LEFT JOIN ruangan ru ON r.id_ruangan = ru.id
-                LEFT JOIN lantai l ON ru.id_lantai = l.id
-                WHERE m.status_data = 'Tampil'
-                ORDER BY m.dibuat_pada DESC
-                LIMIT ? OFFSET ?
-            `, [limit, offset])
+            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi, m.no_klasifikasi, b.bahasa AS nama_bahasa, k.kategori AS nama_kategori, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi_majalah FROM majalah m LEFT JOIN bahasa b ON m.id_bahasa = b.id LEFT JOIN kategori k ON m.id_kategori = k.id LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.status_data = 'Tampil' ORDER BY m.dibuat_pada DESC LIMIT ? OFFSET ?`, [limit, offset])
             return rows
         } catch (err) {
             throw err
@@ -52,38 +88,7 @@ class Majalah {
     // mengmbil semua data majalah dengan status data tampil berdasarakan id
     static async getById(id) {
         try {
-            const [rows] = await connection.query(`                SELECT 
-                    m.id,
-                    m.judul,
-                    m.foto_cover,
-                    m.edisi,
-                    m.no_klasifikasi,
-                    b.bahasa AS nama_bahasa,
-                    m.id_bahasa,
-                    k.kategori AS nama_kategori,
-                    m.id_kategori,
-                    m.tahun_terbit,
-                    m.sinopsis,
-                    m.tempat_terbit,
-                    m.penerbit,
-                    m.id_rak,
-                    r.kode_rak,
-                    ru.kode_ruangan,
-                    l.kode_lantai,
-                    m.ketersediaan,
-                    m.dibuat_pada,
-                    m.diubah_pada,
-                    m.dibuat_oleh,
-                    m.diubah_oleh,
-                    m.status_data
-                FROM majalah m
-                LEFT JOIN bahasa b ON m.id_bahasa = b.id
-                LEFT JOIN kategori k ON m.id_kategori = k.id
-                LEFT JOIN rak r ON m.id_rak = r.id
-                LEFT JOIN ruangan ru ON r.id_ruangan = ru.id
-                LEFT JOIN lantai l ON ru.id_lantai = l.id
-                WHERE m.status_data = 'Tampil' AND m.id = ?
-            `,[id])
+            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi, m.no_klasifikasi, b.bahasa AS nama_bahasa, m.id_bahasa, k.kategori AS nama_kategori, m.id_kategori, m.tahun_terbit, m.sinopsis, m.tempat_terbit, m.penerbit, m.id_rak, r.kode_rak, ru.kode_ruangan, l.kode_lantai, m.ketersediaan, m.dibuat_pada, m.diubah_pada, m.dibuat_oleh, m.diubah_oleh, m.status_data FROM majalah m LEFT JOIN bahasa b ON m.id_bahasa = b.id LEFT JOIN kategori k ON m.id_kategori = k.id LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.status_data = 'Tampil' AND m.id = ?`,[id])
             return rows[0]
         } catch (err) {
             throw err
@@ -123,8 +128,7 @@ class Majalah {
     // mengubah status data menjadi delete
     static async softDelete(user, id) {
         try {
-            const [results] = await connection.query(`UPDATE majalah SET status_data = 'Hapus', dihapus_pada = NOW(), dihapus_oleh = ? WHERE id = ?`,[user.nama, id]
-            )
+            const [results] = await connection.query(`UPDATE majalah SET status_data = 'Hapus', dihapus_pada = NOW(), dihapus_oleh = ? WHERE id = ?`,[user.nama, id])
             return results
         } catch (err) {
             throw err
@@ -240,7 +244,7 @@ class Majalah {
 
     static async getByIdHapus(id) {
         try {
-            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi, m.no_klasifikasi, CONCAT(r.kode_rak, ' - ', ru.kode_ruangan, ' - ', l.kode_lantai) AS lokasi_majalah FROM majalah m LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.status_data = 'Hapus' AND m.id = ?`, [id])
+            const [rows] = await connection.query(`SELECT m.id, m.judul, m.foto_cover, m.edisi, m.no_klasifikasi, b.bahasa AS nama_bahasa, m.id_bahasa, k.kategori AS nama_kategori, m.id_kategori, m.tahun_terbit, m.sinopsis, m.tempat_terbit, m.penerbit, m.id_rak, r.kode_rak, ru.kode_ruangan, l.kode_lantai, m.ketersediaan, m.dihapus_pada, m.dihapus_oleh FROM majalah m LEFT JOIN bahasa b ON m.id_bahasa = b.id LEFT JOIN kategori k ON m.id_kategori = k.id LEFT JOIN rak r ON m.id_rak = r.id LEFT JOIN ruangan ru ON r.id_ruangan = ru.id LEFT JOIN lantai l ON ru.id_lantai = l.id WHERE m.status_data = 'Hapus' AND m.id = ?`, [id])
             return rows[0]
         } catch (err) {
             throw err

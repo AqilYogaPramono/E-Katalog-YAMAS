@@ -7,13 +7,31 @@ const Pegawai = require('../../../models/Pegawai')
 // import middleware untuk mengecek peran pengguna login
 const {authPustakawan} = require('../.././../middlewares/auth')
 
-//menampilakn semua data kategori
 router.get('/', authPustakawan, async (req, res) => {
     try {
         const pegawai = await Pegawai.getNama(req.session.pegawaiId)
-        const data = await Kategori.getAll()
+        const page = parseInt(req.query.page) || 1
+        const limit = 20
+        const offset = (page - 1) * limit
+        const flashedKeyword = req.flash('keyword')[0]
 
-        res.render('pustakawan/data-induk/kategori/index', {data, pegawai})
+        if (flashedKeyword) {
+            const data = await Kategori.searchByKategori(flashedKeyword)
+            return res.render('pustakawan/data-induk/kategori/index', {
+                data,
+                pegawai,
+                page: 1,
+                totalHalaman: 1,
+                keyword: flashedKeyword
+            })
+        }
+
+        const data = await Kategori.getKategori(limit, offset)
+        const countResult = await Kategori.getCountKategori()
+        const totalKategori = countResult[0].total_kategori
+        const totalHalaman = Math.ceil(totalKategori / limit)
+
+        res.render('pustakawan/data-induk/kategori/index', { data, pegawai, page, totalHalaman })
     } catch(err) {
         console.error(err)
         req.flash('error', "Internal Server Error")
@@ -123,13 +141,10 @@ router.post('/update/:id', authPustakawan, async (req, res) => {
     }
 })
 
-//mengapus data kategori berdasarakn id
 router.post('/delete/:id', authPustakawan, async (req, res) => {
     try {
-        // destructuring req.params
         const {id} = req.params
 
-        // memeriksa apakah kategori sudah digunakan
         if (await Kategori.checkKategoriUsed(id)) {
             req.flash("error", "Kategori masih digunakan oleh buku atau majalah lain")
             req.flash('data', req.body)
@@ -143,6 +158,18 @@ router.post('/delete/:id', authPustakawan, async (req, res) => {
         console.error(err)
         req.flash('error', "Internal Server Error")
         return res.redirect('/pustakawan/kategori')
+    }
+})
+
+router.post('/search', authPustakawan, async (req, res) => {
+    try {
+        const { kategori } = req.body
+        req.flash('keyword', kategori || '')
+        res.redirect('/pustakawan/kategori')
+    } catch (err) {
+        console.error(err)
+        req.flash('error', 'Internal server error')
+        res.redirect('/pustakawan/kategori')
     }
 })
 
