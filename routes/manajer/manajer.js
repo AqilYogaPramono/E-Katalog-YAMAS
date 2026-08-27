@@ -97,7 +97,7 @@ router.post('/change-password', authManajer, async (req, res) => {
 
         await Pegawai.changePassword(data, pegawaiId)
         req.flash('success', 'Kata sandi berhasil diubah')
-        res.redirect('/manajer/dashboard')
+        res.redirect('/masuk-manajer')
     } catch (err) {
         req.flash('error', "Internal Server Error")
         res.redirect('/manajer/ubah-kata-sandi')
