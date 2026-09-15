@@ -1,5 +1,8 @@
 const express = require('express')
+const { onlyDomain } = require('../middlewares/cors-option')
 const router = express.Router()
+
+router.use(onlyDomain)
 const modelBuku = require('../models/Buku')
 const modelMajalah = require('../models/Majalah')
 const Koran = require('../models/Koran')

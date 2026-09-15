@@ -6,7 +6,6 @@ var logger = require('morgan');
 require('dotenv').config()
 var session = require('express-session')
 var flash = require('express-flash')
-const cors = require('cors')
 
 //routes index
 const indexRouter = require('./routes/index')
@@ -38,10 +37,6 @@ const bahasaRouter = require('./routes/pustakawan/data-induk/bahasa')
 const kategoriRouter = require('./routes/pustakawan/data-induk/kategori')
 
 var app = express();
-app.use(cors({
-    origin: true,
-    credentials: true
-}))
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
