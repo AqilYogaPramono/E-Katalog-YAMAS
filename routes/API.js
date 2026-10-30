@@ -1,8 +1,10 @@
 const express = require('express')
 const { onlyDomain } = require('../middlewares/cors-option')
+const { apiLimiter } = require('../middlewares/rate-limiter')
 const router = express.Router()
 
 router.use(onlyDomain)
+router.use(apiLimiter)
 const modelBuku = require('../models/Buku')
 const modelMajalah = require('../models/Majalah')
 const Koran = require('../models/Koran')
